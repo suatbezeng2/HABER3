@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>aldaGel Platform - Tarama API Dokümantasyonu</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; margin: 0; padding: 20px; background-color: #f4f4f4; color: #333; }
+        .container { max-width: 800px; margin: auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #333; }
+        pre { background: #eee; padding: 10px; border-radius: 5px; overflow-x: auto; }
+        code { font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace; }
+        .endpoint { background: #e0e0e0; padding: 5px 10px; border-radius: 5px; font-weight: bold; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f0f0f0; }
+        .note { background-color: #fff9c4; border-left: 5px solid #ffeb3b; padding: 10px; margin-bottom: 15px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>aldaGel Platform - Tarama API Dokümantasyonu</h1>
+        <p>Bu doküman, <strong>aldaGel Platform</strong> uygulamasının siteleri taramak için sunduğu API endpoint'inin nasıl kullanılacağını açıklar.</p>
+
+        <h2>API Endpoint</h2>
+        <p><code class="endpoint">POST /api/scrape</code></p>
+        <p>Bu endpoint, belirtilen sitelerden veya tüm aktif sitelerden makaleleri tarar.</p>
+
+        <h2>İstek (Request) Formatı</h2>
+        <p>İstek, <code class="language-json">application/json</code> formatında bir body içermelidir.</p>
+        
+        <h3>Headerlar</h3>
+        <ul>
+            <li><code>Content-Type: application/json</code></li>
+            <!-- İleride bir API anahtarı veya token eklenecekse buraya eklenebilir:
+            <li><code>Authorization: Bearer YOUR_API_KEY</code></li>
+            -->
+        </ul>
+
+        <h3>Body Parametreleri</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Parametre</th>
+                    <th>Tür</th>
+                    <th>Açıklama</th>
+                    <th>Gerekli mi?</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>siteIds</code></td>
+                    <td>Array&lt;string&gt;</td>
+                    <td>Taranacak belirli site ID'lerinin bir dizisi. Eğer bu parametre sağlanırsa, sadece bu siteler taranır.</td>
+                    <td>Hayır</td>
+                </tr>
+                <tr>
+                    <td><code>scrapeAllActive</code></td>
+                    <td>boolean</td>
+                    <td>Eğer <code>true</code> olarak ayarlanırsa ve <code>siteIds</code> sağlanmamışsa veya boşsa, sistemdeki tüm aktif HTML türündeki siteler taranır. <code>siteIds</code> doluysa bu parametre göz ardı edilir.</td>
+                    <td>Hayır</td>
+                </tr>
+                <tr>
+                    <td><code>limitPerSite</code></td>
+                    <td>number</td>
+                    <td>Her bir site için taranacak maksimum makale sayısı. Belirtilmezse varsayılan olarak 10 kullanılır. Minimum değer 1'dir.</td>
+                    <td>Hayır</td>
+                </tr>
+            </tbody>
+        </table>
+        <div class="note">
+            <strong>Not:</strong> Ya <code>siteIds</code> dizisini (bir veya daha fazla ID ile) ya da <code>scrapeAllActive: true</code> parametresini sağlamalısınız. İkisi de sağlanmazsa veya <code>siteIds</code> boş bir dizi ise ve <code>scrapeAllActive</code> <code>false</code> veya tanımsız ise, API hata döndürecektir. Eğer hem <code>siteIds</code> hem de <code>scrapeAllActive: true</code> sağlanırsa, <code>siteIds</code> öncelikli olacaktır.
+        </div>
+
+        <h3>Örnek İstek Body'leri</h3>
+        
+        <h4>Belirli Siteleri Taramak İçin:</h4>
+        <pre><code class="language-json">
+{
+  "siteIds": ["recABC123xyz", "recDEF456uvw"],
+  "limitPerSite": 5 
+}
+        </code></pre>
+
+        <h4>Tüm Aktif Siteleri Taramak İçin:</h4>
+        <pre><code class="language-json">
+{
+  "scrapeAllActive": true,
+  "limitPerSite": 20
+}
+        </code></pre>
+        
+        <h4>Tüm Aktif Siteleri Varsayılan Limitle (10) Taramak İçin:</h4>
+        <pre><code class="language-json">
+{
+  "scrapeAllActive": true
+}
+        </code></pre>
+
+        <h2>Yanıt (Response) Formatı</h2>
+        <p>Yanıt, <code class="language-json">application/json</code> formatında olacaktır.</p>
+
+        <h3>Başarılı Yanıt (200 OK veya 207 Multi-Status)</h3>
+        <pre><code class="language-json">
+{
+  "success": true, // veya kısmi başarılar için false olabilir
+  "message": "Toplu tarama tamamlandı. X site için deneme yapıldı, Y başarılı oldu. Toplam Z yeni makale eklendi, W makale atlandı.",
+  "results": [
+    {
+      "siteId": "recABC123xyz",
+      "siteName": "Örnek Site Adı 1",
+      "status": "Site taraması başarılı. A yeni makale eklendi, B makale atlandı.",
+      "newArticles": 1, // Bu site için eklenen yeni makale sayısı
+      "skippedArticles": 0, // Bu site için atlanan (zaten mevcut) makale sayısı
+      "errors": [] // Bu site için oluşan hatalar (boşsa sorun yok)
+    },
+    {
+      "siteId": "recDEF456uvw",
+      "siteName": "Örnek Site Adı 2",
+      "status": "Site taraması hatalarla tamamlandı. C yeni makale eklendi, D makale atlandı. Hatalar: [Hata mesajı]",
+      "newArticles": 0,
+      "skippedArticles": 0,
+      "errors": ["Bir hata oluştu: Detaylar..."]
+    }
+    // ... diğer sitelerin sonuçları
+  ]
+}
+        </code></pre>
+        <p><code>207 Multi-Status</code> durum kodu, bazı sitelerin başarılı bir şekilde taranıp bazılarında hata oluştuğu kısmi başarı durumlarında dönebilir. <code>success</code> alanı genel durumu yansıtır.</p>
+
+        <h3>Hatalı İstek Yanıtı (400 Bad Request)</h3>
+        <pre><code class="language-json">
+{
+  "success": false,
+  "message": "Geçerli 'siteIds' dizisi sağlanmalı veya 'scrapeAllActive' true olarak ayarlanmalı." 
+  // veya "Geçersiz 'limitPerSite'. Pozitif bir sayı olmalı."
+}
+        </code></pre>
+
+        <h3>Sunucu Hatası Yanıtı (500 Internal Server Error)</h3>
+        <pre><code class="language-json">
+{
+  "success": false,
+  "message": "API Hatası: [Hata mesajının detayı]"
+}
+        </code></pre>
+        
+        <h2>Kullanım Örnekleri (curl ile)</h2>
+        <p>Aşağıdaki örnekler, API endpoint'inizin <code>http://localhost:3000/api/scrape</code> adresinde çalıştığını varsayar. Kendi dağıtım URL'niz ile değiştirin.</p>
+
+        <h4>Belirli Siteleri Taramak:</h4>
+        <pre><code class="language-bash">
+curl -X POST http://localhost:3000/api/scrape \
+-H "Content-Type: application/json" \
+-d '{
+  "siteIds": ["recABC123xyz", "recDEF456uvw"],
+  "limitPerSite": 5
+}'
+        </code></pre>
+
+        <h4>Tüm Aktif Siteleri Taramak:</h4>
+        <pre><code class="language-bash">
+curl -X POST http://localhost:3000/api/scrape \
+-H "Content-Type: application/json" \
+-d '{
+  "scrapeAllActive": true,
+  "limitPerSite": 15
+}'
+        </code></pre>
+
+        <h2>Önemli Notlar</h2>
+        <ul>
+            <li>Tarama işlemi, sitelerin yapısına ve sayısına bağlı olarak zaman alabilir. API isteğinizin zaman aşımına uğramaması için istemci tarafında uygun bir zaman aşımı değeri ayarlamayı düşünebilirsiniz.</li>
+            <li><code>limitPerSite</code> parametresi, her bir site için kazınacak maksimum makale sayısını belirtir, toplamda değil.</li>
+            <li>Airtable bağlantı bilgileri (API anahtarı, base ID, tablo adları) sunucu tarafında <code>.env</code> ve yapılandırma dosyalarından okunur. Bunların doğru yapılandırıldığından emin olun.</li>
+        </ul>
+
+    </div>
+</body>
+</html>

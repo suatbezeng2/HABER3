@@ -1,0 +1,12 @@
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Allow read/write access on all documents to anyone signed in to the application
+    // TODO: Restrict access rules for production
+    match /{document=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}
